@@ -11,11 +11,10 @@ namespace RBev.Xrm.QueryExtensions
         /// <summary> 
         /// This constructor is called by the client to create the data source. 
         /// </summary> 
-        public CrmQueryable(IQueryProvider provider, string entityName)
+        public CrmQueryable(IQueryProvider provider)
         {
             Provider = provider;
             Expression = Expression.Constant(this);
-            //EntityLogicalName = entityName;
         }
 
         /// <summary> 
@@ -56,6 +55,5 @@ namespace RBev.Xrm.QueryExtensions
         public Expression Expression { get; private set; }
         public Type ElementType { get { return typeof (T); } }
         public IQueryProvider Provider { get; private set; }
-        //public string EntityLogicalName { get; private set; }
     }
 }

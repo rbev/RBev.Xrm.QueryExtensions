@@ -13,10 +13,9 @@ namespace RBev.Xrm.QueryExtensions
         {
             var logicalNameAtt = typeof(T).GetCustomAttributes<EntityLogicalNameAttribute>(true).FirstOrDefault();
             if (logicalNameAtt == null) throw new InvalidOperationException("Could not find EntityLogicalNameAttribute");
-            string entityName = logicalNameAtt.LogicalName;
 
             var context = new CrmQueryContext(orgService);
-            return new CrmQueryable<T>(new CrmQueryProvider(context), entityName);
+            return new CrmQueryable<T>(new CrmQueryProvider(context));
         }
     }
 }

@@ -18,6 +18,11 @@ namespace RBev.Xrm.QueryExtensions
             _organisationService = organisationService;
         }
 
+        public IOrganizationService OrganisationService
+        {
+            get { return _organisationService; }
+        }
+
         public QueryExpression GetQueryExpression(Expression expression)
         {
             var builder = new QueryExpressionBuilder();
@@ -26,34 +31,30 @@ namespace RBev.Xrm.QueryExtensions
         }
 
         // Executes the expression tree that is passed to it. 
-        internal TResult Execute<TResult>(Expression expression, bool IsEnumerable)
+        internal TResult Execute<TResult>(Expression expression)
         {
             // The expression must represent a query over the data source. 
             //if (!IsQueryOverDataSource(expression))
             //    throw new InvalidProgramException("No query over the data source was specified.");
 
-            //first resolve all local references/constants in the expression
-            expression = Evaluator.PartialEval(expression);
-            
-            var builder = new QueryExpressionBuilder();
-            builder.LoadExpression(expression);
+            expression = CrmEvaluator.PartialEval(expression, this);
 
-            var result = _organisationService.Execute<RetrieveMultipleResponse>(new RetrieveMultipleRequest()
-            {
-                Query = builder.Query
-            });
+            //var result = _organisationService.Execute<RetrieveMultipleResponse>(new RetrieveMultipleRequest()
+            //{
+            //    Query = builder.Query
+            //});
 
-            if (builder.IsCount)
-            {
-                return (TResult)(object)result.EntityCollection.TotalRecordCount;
-            }
+            //if (builder.IsCount)
+            //{
+            //    return (TResult)(object)result.EntityCollection.TotalRecordCount;
+            //}
 
-            //todo: need a way of doing this without reflection, since we don't have that <T> in here
-            var replacer = (ExpressionVisitor)Activator.CreateInstance(typeof(CrmQueryableReplacer<>)
-                .MakeGenericType(builder.RootEntityType),
-                new object[] { result.EntityCollection });
+            ////todo: need a way of doing this without reflection, since we don't have that <T> in here
+            //var replacer = (ExpressionVisitor)Activator.CreateInstance(typeof(CrmQueryableReplacer<>)
+            //    .MakeGenericType(builder.RootEntityType),
+            //    new object[] { result.EntityCollection });
 
-            return (TResult)Expression.Lambda(replacer.Visit(expression)).Compile().DynamicInvoke();
+            return (TResult)Expression.Lambda(expression).Compile().DynamicInvoke();
         }
 
         private bool IsQueryOverDataSource(Expression expression)

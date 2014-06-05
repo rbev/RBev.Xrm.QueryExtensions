@@ -6,7 +6,7 @@ namespace RBev.Xrm.QueryExtensions
 {
     internal class CrmQueryProvider : IQueryProvider
     {
-        private CrmQueryContext _queryContext;
+        private readonly CrmQueryContext _queryContext;
 
         public CrmQueryProvider(CrmQueryContext queryContext)
         {
@@ -41,7 +41,7 @@ namespace RBev.Xrm.QueryExtensions
 
         public TResult Execute<TResult>(Expression expression)
         {
-            return _queryContext.Execute<TResult>(expression, false);
+            return _queryContext.Execute<TResult>(expression);
         }
     }
 }

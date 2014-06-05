@@ -43,7 +43,6 @@
     <Compile Include="Expressions\Evaluator.cs" />
     <Compile Include="Vistors\CountReplacer.cs" />
     <Compile Include="CrmQueryable.cs" />
-    <Compile Include="Vistors\CrmEvalVisitors\CrmQueryNominator.cs" />
     <Compile Include="Vistors\CrmQueryableReplacer.cs" />
     <Compile Include="CrmQueryContext.cs" />
     <Compile Include="CrmQueryProvider.cs" />
@@ -60,6 +59,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\lib\Crm\Microsoft.Crm.Sdk.Proxy.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Xrm.Client, Version=6.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\lib\Crm\Microsoft.Xrm.Client.dll</HintPath>

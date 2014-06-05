@@ -50,7 +50,6 @@
     <Compile Include="OrganisationServiceExtension.cs" />
     <Compile Include="TypeExtensions.cs" />
     <Compile Include="Vistors\MemberAccessInfo.cs" />
-    <Compile Include="Vistors\Nominator.cs" />
     <Compile Include="Vistors\SelectExpresssionRemapper.cs" />
     <Compile Include="Vistors\SelectorRequiredAttributeNameExtractor.cs" />
   </ItemGroup>

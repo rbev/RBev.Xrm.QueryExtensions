@@ -16,7 +16,7 @@ namespace RBev.Xrm.QueryExtensions.Expressions
         {
             expression = Evaluator.PartialEval(expression);
 
-            var serverEvaluatable = new Nominator(e => CanServerEvaluate(e, context)).Nominate(expression);
+            var serverEvaluatable = new Nominator().Nominate(expression);
 
             foreach (var eval in serverEvaluatable)
             {
@@ -47,11 +47,80 @@ namespace RBev.Xrm.QueryExtensions.Expressions
                 //var provider = (((IQueryable) e.Value).Provider as CrmQueryProvider;
                 //return provider. == context; ;
             }
-
+            
             return false;
         }
 
-        private class CrmExpressionReplacer : ExpressionVisitor
+        public class Nominator : ExpressionVisitor
+        {
+            private HashSet<Expression> _candidates;
+            private bool _isCandiate;
+
+            internal Nominator()
+            {
+            }
+
+            internal HashSet<Expression> Nominate(Expression expression)
+            {
+                this._candidates = new HashSet<Expression>();
+                _isCandiate = false;
+                this.Visit(expression);
+                return this._candidates;
+            }
+
+            public override Expression Visit(Expression expression)
+            {
+                if (expression != null)
+                {
+                    bool lastWasCandidate = _isCandiate;
+                    _isCandiate = false;
+                    base.Visit(expression);
+                    if (_isCandiate)
+                    {
+                        //if visit was called by something that doesn't swallow this one up
+                        if (!lastWasCandidate)
+                        {
+                            this._candidates.Add(expression);
+                        }
+                    }
+                }
+
+                return expression;
+            }
+            
+            protected override Expression VisitConstant(ConstantExpression node)
+            {
+                if (node.Type.IsClosedOver(typeof(CrmQueryable<>)))
+                {
+                    _isCandiate = true;
+                }
+                return base.VisitConstant(node);
+            }
+
+            protected override Expression VisitMethodCall(MethodCallExpression node)
+            {
+                if (node.Method.DeclaringType != typeof (Queryable))
+                {
+                    _isCandiate = false;
+                }
+                else
+                {
+                    switch (node.Method.Name)
+                    {
+                        case "Count":
+                        case "Where":
+                        case "Select":
+                            _isCandiate = true;
+                            break;
+                    }
+                }
+                return base.VisitMethodCall(node);
+
+            }
+        }
+
+
+        public class CrmExpressionReplacer : ExpressionVisitor
         {
             private readonly QueryExpressionBuilder _queryExpressionBuilder;
             private readonly Expression _toReplace;

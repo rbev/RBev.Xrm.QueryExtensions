@@ -14,7 +14,7 @@ namespace RBev.Xrm.QueryExtensions.Expressions
     {
         public static Expression PartialEval(Expression expression, CrmQueryContext context)
         {
-            expression = Evaluator.PartialEval(expression);
+           // expression = Evaluator.PartialEval(expression);
 
             var serverEvaluatable = new Nominator().Nominate(expression);
 
@@ -70,22 +70,22 @@ namespace RBev.Xrm.QueryExtensions.Expressions
 
             public override Expression Visit(Expression expression)
             {
-                if (expression != null)
+                if (expression == null)
+                    return null;
+
+                bool lastWasCandidate = _isCandiate;
+                _isCandiate = false;
+                var result = base.Visit(expression);
+
+                if (_isCandiate)
                 {
-                    bool lastWasCandidate = _isCandiate;
-                    _isCandiate = false;
-                    base.Visit(expression);
-                    if (_isCandiate)
+                    //if visit was called by something that doesn't swallow this one up
+                    if (!lastWasCandidate)
                     {
-                        //if visit was called by something that doesn't swallow this one up
-                        if (!lastWasCandidate)
-                        {
-                            this._candidates.Add(expression);
-                        }
+                        this._candidates.Add(expression);
                     }
                 }
-
-                return expression;
+                return result;
             }
             
             protected override Expression VisitConstant(ConstantExpression node)
@@ -143,7 +143,8 @@ namespace RBev.Xrm.QueryExtensions.Expressions
                         new object[] {_organisationService, _queryExpressionBuilder.Query})
                         ;
 
-                    return GetQueryableConstant(e);
+                    var expr = GetQueryableConstant(e);
+                    return expr;
                 }
 
                 return base.Visit(node);

@@ -37,22 +37,25 @@ namespace RBev.Xrm.QueryExtensions
             //if (!IsQueryOverDataSource(expression))
             //    throw new InvalidProgramException("No query over the data source was specified.");
 
-            expression = CrmEvaluator.PartialEval(expression, this);
+            //Evaluator.PartialEval(expression);
 
-            //var result = _organisationService.Execute<RetrieveMultipleResponse>(new RetrieveMultipleRequest()
-            //{
-            //    Query = builder.Query
-            //});
+            var builder = new QueryExpressionBuilder();
+            builder.LoadExpression(expression);
 
-            //if (builder.IsCount)
-            //{
-            //    return (TResult)(object)result.EntityCollection.TotalRecordCount;
-            //}
+            var result = _organisationService.Execute<RetrieveMultipleResponse>(new RetrieveMultipleRequest()
+            {
+                Query = builder.Query
+            });
 
-            ////todo: need a way of doing this without reflection, since we don't have that <T> in here
-            //var replacer = (ExpressionVisitor)Activator.CreateInstance(typeof(CrmQueryableReplacer<>)
-            //    .MakeGenericType(builder.RootEntityType),
-            //    new object[] { result.EntityCollection });
+            if (builder.IsCount)
+            {
+                return (TResult)(object)result.EntityCollection.TotalRecordCount;
+            }
+
+            //todo: need a way of doing this without reflection, since we don't have that <T> in here
+            var replacer = (ExpressionVisitor)Activator.CreateInstance(typeof(CrmQueryableReplacer<>)
+                .MakeGenericType(builder.RootEntityType),
+                new object[] { result.EntityCollection });
 
             return (TResult)Expression.Lambda(expression).Compile().DynamicInvoke();
         }

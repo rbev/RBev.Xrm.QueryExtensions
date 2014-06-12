@@ -40,9 +40,9 @@ namespace RBev.Xrm.QueryExtensions.Expressions
         /// <summary>
         /// Evaluates & replaces sub-trees when first candidate is reached (top-down)
         /// </summary>
-        private class SubtreeEvaluator : ExpressionVisitor
+        class SubtreeEvaluator : ExpressionVisitor
         {
-            private HashSet<Expression> candidates;
+            HashSet<Expression> candidates;
 
             internal SubtreeEvaluator(HashSet<Expression> candidates)
             {
@@ -75,7 +75,6 @@ namespace RBev.Xrm.QueryExtensions.Expressions
                 {
                     return e;
                 }
-
                 LambdaExpression lambda = Expression.Lambda(e);
                 Delegate fn = lambda.Compile();
                 return Expression.Constant(fn.DynamicInvoke(null), e.Type);

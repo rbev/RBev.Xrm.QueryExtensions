@@ -41,6 +41,7 @@
     <Compile Include="Collections\CrmQueryResult.cs" />
     <Compile Include="Expressions\CrmEvaluator.cs" />
     <Compile Include="Expressions\Evaluator.cs" />
+    <Compile Include="Translator\QueryTranslator.cs" />
     <Compile Include="Vistors\CountReplacer.cs" />
     <Compile Include="CrmQueryable.cs" />
     <Compile Include="Vistors\CrmQueryableReplacer.cs" />

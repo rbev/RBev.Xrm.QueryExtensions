@@ -41,21 +41,45 @@ namespace RBev.Xrm.QueryExtensions.Translator
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            if (m.Method.DeclaringType == typeof(Queryable) && m.Method.Name == "Where")
+            if (m.Method.DeclaringType == typeof(Queryable))
             {
-                if (_queryExpression.EntityName == null)
+                if (m.Method.Name == "Where")
                 {
-                    this.Visit(m.Arguments[0]);
+                    if (_queryExpression.Criteria.FilterOperator != LogicalOperator.And
+                        && _queryExpression.Criteria.Conditions.Any())
+                    {
+                        _filterExpression = new FilterExpression();
+                        _queryExpression.Criteria.Filters.Add(_filterExpression);
+                    }
+                    else
+                    {
+                        _filterExpression = _queryExpression.Criteria;
+                    }
+
+
+                    if (_queryExpression.EntityName == null)
+                    {
+                        this.Visit(m.Arguments[0]);
+                    }
+                    else
+                        throw new NotImplementedException("Cannot visit a second element type");
+
+                    //        sb.Append(") AS T WHERE ");
+                    LambdaExpression lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
+                    this.Visit(lambda.Body);
+                    return m;
                 }
                 else
-                    throw new NotImplementedException("Cannot visit a second element type");
-
-                //        sb.Append(") AS T WHERE ");
-                LambdaExpression lambda = (LambdaExpression)StripQuotes(m.Arguments[1]);
-                this.Visit(lambda.Body);
-                return m;
+                {
+                    throw new NotImplementedException();
+                }
             }
-            throw new NotSupportedException(string.Format("The method '{0}' is not supported", m.Method.Name));
+            else if (typeof(IQueryable).IsAssignableFrom(m.Method.ReturnType))
+            {
+                //evaluate this method call, it should eventually get back down to linq
+                return Visit(((IQueryable)Expression.Lambda(m).Compile().DynamicInvoke(null)).Expression);
+            }
+            throw new NotImplementedException("Method not supported");
         }
 
         protected override Expression VisitUnary(UnaryExpression u)
@@ -63,6 +87,7 @@ namespace RBev.Xrm.QueryExtensions.Translator
             switch (u.NodeType)
             {
                 case ExpressionType.Not:
+                    throw new NotImplementedException("Write better tests for this one");
                     _negated = !_negated;
                     this.Visit(u.Operand);
                     _negated = !_negated;
@@ -75,42 +100,31 @@ namespace RBev.Xrm.QueryExtensions.Translator
 
         protected override Expression VisitBinary(BinaryExpression b)
         {
-            if (_filterExpression == null)
-                _filterExpression = _queryExpression.Criteria;
-
             switch (b.NodeType)
             {
                 case ExpressionType.AndAlso:
-                    if (_filterExpression.Filters.Count == 0)
-                        _filterExpression.FilterOperator = LogicalOperator.And;
-                    else if (_filterExpression.FilterOperator != LogicalOperator.And)
-                        //todo :recurse here
-                        _filterExpression.
-                    base.Visit(b.Left);
-                    base.Visit(b.Right);
+                    VisitBinaryLogicalOperator(b, LogicalOperator.And);
                     return b;
-
                 case ExpressionType.OrElse:
-                        throw new NotImplementedException();
-                    break;
+                    VisitBinaryLogicalOperator(b, LogicalOperator.Or);
+                    return b;
                 case ExpressionType.Equal:
-                    _condition.Operator = ConditionOperator.Equal;
+                    _condition = new ConditionExpression() { Operator = ConditionOperator.Equal };
                     break;
                 case ExpressionType.NotEqual:
-                    _condition.Operator = ConditionOperator.NotEqual;
+                    _condition = new ConditionExpression() { Operator = ConditionOperator.NotEqual };
                     break;
                 case ExpressionType.LessThan:
-                    throw new NotImplementedException();
-                    // sb.Append(" < ");
+                    _condition = new ConditionExpression() { Operator = ConditionOperator.LessThan };
                     break;
                 case ExpressionType.LessThanOrEqual:
-                    // sb.Append(" <= ");
+                    _condition = new ConditionExpression() { Operator = ConditionOperator.LessEqual };
                     break;
                 case ExpressionType.GreaterThan:
-                    //sb.Append(" > ");
+                    _condition = new ConditionExpression() { Operator = ConditionOperator.GreaterThan };
                     break;
                 case ExpressionType.GreaterThanOrEqual:
-                    //sb.Append(" >= ");
+                    _condition = new ConditionExpression() { Operator = ConditionOperator.GreaterEqual };
                     break;
                 default:
                     throw new NotSupportedException(string.Format("The binary operator '{0}' is not supported", b.NodeType));
@@ -123,6 +137,24 @@ namespace RBev.Xrm.QueryExtensions.Translator
             _condition = null;
 
             return b;
+        }
+
+        private void VisitBinaryLogicalOperator(BinaryExpression b, LogicalOperator logicalOperator)
+        {
+            //if it's empty just use it
+            if (_filterExpression.Filters.Count == 0)
+                _filterExpression.FilterOperator = logicalOperator;
+
+            var epression = _filterExpression;
+            //we are now in a "and" as part of an "or" chain
+            if (_filterExpression.FilterOperator != logicalOperator)
+                _filterExpression = new FilterExpression(logicalOperator);
+
+            base.Visit(b.Left);
+            base.Visit(b.Right);
+
+            //restore the changed item
+            _filterExpression = epression;
         }
 
         protected override Expression VisitConstant(ConstantExpression c)
